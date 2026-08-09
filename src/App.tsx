@@ -28,7 +28,7 @@ const CalendarViewRenderer: React.FC = () => {
 };
 
 const MainLayout: React.FC = () => {
-  const { currentPage } = useAuth();
+  const { currentPage, isAuthenticated } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('un_ai_society_theme') as 'light' | 'dark') || 'light';
   });
@@ -42,8 +42,8 @@ const MainLayout: React.FC = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  if (currentPage === 'auth') {
-    return <AuthPage />;
+  if (!isAuthenticated || currentPage === 'auth') {
+    return <AuthPage theme={theme} toggleTheme={toggleTheme} />;
   }
 
   return (

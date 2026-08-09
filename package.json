@@ -12,11 +12,14 @@
   "dependencies": {
     "@rolldown/binding-darwin-arm64": "^1.2.3",
     "@types/canvas-confetti": "^1.9.0",
+    "@types/three": "^0.185.4",
     "canvas-confetti": "^1.9.4",
     "firebase": "^12.17.1",
     "lucide-react": "^1.31.0",
+    "postprocessing": "^6.39.4",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

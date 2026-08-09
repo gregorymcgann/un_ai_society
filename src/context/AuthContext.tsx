@@ -42,10 +42,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Failed to parse saved user:', e);
       }
     }
-    return MOCK_USERS[0];
+    return null;
   });
 
   const [currentPage, setCurrentPageState] = useState<AuthPageView>(() => {
+    const savedUser = localStorage.getItem(STORAGE_KEY);
+    if (!savedUser) {
+      return 'auth';
+    }
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
@@ -58,6 +62,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const setCurrentPage = (page: AuthPageView) => {
+    if (!currentUser && page !== 'auth') {
+      setCurrentPageState('auth');
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.history.pushState({ page: 'auth' }, '', '/login');
+      }
+      return;
+    }
     setCurrentPageState(page);
     if (typeof window !== 'undefined') {
       const targetUrl = page === 'auth' ? '/login' : '/';
@@ -68,10 +79,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    if (!currentUser) {
+      setCurrentPageState('auth');
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.history.replaceState({ page: 'auth' }, '', '/login');
+      }
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
-      if (path.includes('login') || hash.includes('login')) {
+      if (!currentUser || path.includes('login') || hash.includes('login')) {
         setCurrentPageState('auth');
       } else {
         setCurrentPageState('calendar');
@@ -80,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [currentUser]);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
@@ -235,6 +255,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     firebaseSignOut(auth).catch(() => {});
     setCurrentUser(null);
+    setCurrentPageState('auth');
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.history.pushState({ page: 'auth' }, '', '/login');
+    }
   };
 
   const switchUserRole = async (role: UserRole) => {

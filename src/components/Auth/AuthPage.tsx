@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, 
   ShieldCheck, 
   UserCheck, 
   Mail, 
@@ -8,14 +7,44 @@ import {
   User, 
   Building2, 
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { MOCK_USERS } from '../../services/mockData';
+import PixelBlast from '../Background/PixelBlast';
 
-export const AuthPage: React.FC = () => {
-  const { loginWithMicrosoft, loginAsUser, setCurrentPage } = useAuth();
+interface AuthPageProps {
+  theme?: 'light' | 'dark';
+  toggleTheme?: () => void;
+}
+
+export const AuthPage: React.FC<AuthPageProps> = ({
+  theme: propTheme,
+  toggleTheme: propToggleTheme,
+}) => {
+  const { loginWithMicrosoft, loginAsUser } = useAuth();
   const [mode, setMode] = useState<'signin' | 'create'>('signin');
+
+  const [internalTheme, setInternalTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('un_ai_society_theme') as 'light' | 'dark') || 'light';
+    }
+    return 'light';
+  });
+
+  const theme = propTheme || internalTheme;
+  const toggleTheme = propToggleTheme || (() => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setInternalTheme(next);
+    if (typeof window !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('un_ai_society_theme', next);
+    }
+  });
+
+  const isLight = theme === 'light';
   
   // Form fields state
   const [fullName, setFullName] = useState('');
@@ -63,14 +92,46 @@ export const AuthPage: React.FC = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#040C16',
-      color: '#F8FAFC',
+      backgroundColor: isLight ? '#FFFFFF' : '#040C16',
+      color: isLight ? '#0F172A' : '#F8FAFC',
       display: 'flex',
       flexDirection: 'column',
       fontFamily: "'Roboto', sans-serif",
       position: 'relative',
       overflow: 'hidden',
+      transition: 'background-color 0.3s ease, color 0.3s ease',
     }}>
+      {/* Interactive Pixel Background */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'auto',
+        opacity: isLight ? 0.4 : 1,
+        transition: 'opacity 0.3s ease',
+      }}>
+        <PixelBlast
+          key={isLight ? 'light-mode' : 'dark-mode'}
+          variant="square"
+          pixelSize={4}
+          color={isLight ? '#C5E3F6' : '#003366'}
+          patternScale={2.2}
+          patternDensity={isLight ? 0.6 : 1}
+          pixelSizeJitter={0}
+          enableRipples
+          rippleSpeed={0.35}
+          rippleThickness={0.12}
+          rippleIntensityScale={isLight ? 0.8 : 1.5}
+          liquid={false}
+          liquidStrength={0.12}
+          liquidRadius={1.2}
+          liquidWobbleSpeed={5}
+          speed={0.4}
+          edgeFade={isLight ? 0.4 : 0.25}
+          transparent
+        />
+      </div>
+
       {/* Ambient background glow - unboxed and fluid */}
       <div style={{
         position: 'absolute',
@@ -79,48 +140,50 @@ export const AuthPage: React.FC = () => {
         transform: 'translateX(-50%)',
         width: '1000px',
         height: '600px',
-        background: 'radial-gradient(ellipse at center, rgba(0, 158, 219, 0.15) 0%, rgba(0, 51, 102, 0.1) 45%, transparent 70%)',
+        background: isLight 
+          ? 'radial-gradient(ellipse at center, rgba(0, 158, 219, 0.12) 0%, rgba(0, 158, 219, 0.04) 45%, transparent 70%)'
+          : 'radial-gradient(ellipse at center, rgba(0, 158, 219, 0.15) 0%, rgba(0, 51, 102, 0.1) 45%, transparent 70%)',
         pointerEvents: 'none',
-        zIndex: 0,
+        zIndex: 1,
       }} />
 
-      {/* Top Header Bar - Flat navigation */}
+      {/* Top Header Bar */}
       <header style={{
         position: 'relative',
         zIndex: 10,
         padding: '1.75rem 2.5rem',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
+        gap: '1rem',
       }}>
         <button
-          onClick={() => setCurrentPage('calendar')}
+          onClick={toggleTheme}
           style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#94A3B8',
-            fontSize: '0.9rem',
-            fontWeight: 500,
-            cursor: 'pointer',
-            display: 'inline-flex',
+            background: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.1)',
+            border: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.15)'}`,
+            borderRadius: '50%',
+            width: '36px',
+            height: '36px',
+            display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            padding: 0,
-            transition: 'color 0.2s ease',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: isLight ? '#0F172A' : '#F8FAFC',
+            transition: 'all 0.2s ease',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#009EDB')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#94A3B8')}
+          title={`Switch to ${isLight ? 'Dark' : 'Light'} Mode`}
         >
-          <ArrowLeft size={18} /> Return to Event Calendar
+          {isLight ? <Moon size={18} /> : <Sun size={18} color="#FFB800" />}
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#64748B' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: isLight ? '#475569' : '#64748B' }}>
           <ShieldCheck size={16} color="#009EDB" />
           <span>UN Entra ID Single Sign-On</span>
         </div>
       </header>
 
-      {/* Main Content Body - Completely Flat & Unboxed */}
+      {/* Main Content Body */}
       <main style={{
         position: 'relative',
         zIndex: 10,
@@ -133,100 +196,96 @@ export const AuthPage: React.FC = () => {
         flexDirection: 'column',
       }}>
 
-        {/* ------------------------------------------------------------- */}
-        {/* Microsoft Login & Logo Section - FLAT UNBOXED WITH LOGO LEFT  */}
-        {/* ------------------------------------------------------------- */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1.25rem',
-          flexWrap: 'wrap',
-          marginBottom: '2.5rem',
-          paddingBottom: '2rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        }}>
-          {/* Logo on the left of Microsoft button */}
+        {/* Hero Section with Logo, Title, Subtitle, and Microsoft SSO */}
+        <div style={{ marginBottom: '2.5rem' }}>
           <img 
-            src="/un_ai_society_logo_white.png" 
+            src={isLight ? "/UN_AI_Society_Logo.png" : "/un_ai_society_logo_white.png"}
             alt="UN AI Society Logo" 
             style={{ 
-              height: '44px', 
+              height: '72px', 
               width: 'auto', 
               objectFit: 'contain',
-              filter: 'drop-shadow(0 2px 8px rgba(0, 158, 219, 0.2))'
+              marginBottom: '1.5rem',
+              filter: isLight 
+                ? 'drop-shadow(0 4px 12px rgba(0, 158, 219, 0.18))'
+                : 'drop-shadow(0 4px 12px rgba(0, 158, 219, 0.25))'
             }} 
           />
 
-          {/* Login with Microsoft Option Text Button - UNBOXED */}
-          <button
-            type="button"
-            onClick={() => loginWithMicrosoft()}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              padding: '0.4rem 0',
-              color: '#FFFFFF',
-              fontSize: '1.15rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-              letterSpacing: '-0.01em',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#38BDF8';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#FFFFFF';
-            }}
-          >
-            {/* Official 4-color Microsoft Symbol */}
-            <svg width="22" height="22" viewBox="0 0 23 23" fill="none" style={{ flexShrink: 0 }}>
-              <path fill="#F35325" d="M1 1h10v10H1z"/>
-              <path fill="#81BC06" d="M12 1h10v10H12z"/>
-              <path fill="#05A6F0" d="M1 12h10v10H1z"/>
-              <path fill="#FFBA08" d="M12 12h10v10H12z"/>
-            </svg>
-            <span style={{ 
-              borderBottom: '2px solid rgba(0, 158, 219, 0.6)', 
-              paddingBottom: '2px' 
-            }}>
-              Login with Microsoft
-            </span>
-          </button>
-        </div>
-
-        {/* Hero Title & Subtitle */}
-        <div style={{ marginBottom: '2.5rem' }}>
           <h1 style={{ 
             fontSize: '2.25rem', 
             fontWeight: 800, 
-            color: '#FFFFFF', 
+            color: isLight ? '#0F172A' : '#FFFFFF', 
             margin: '0 0 0.6rem 0',
             letterSpacing: '-0.03em',
             lineHeight: 1.2,
           }}>
-            {mode === 'signin' ? 'Sign In to UN AI Society' : 'Create UN AI Account'}
+            {mode === 'signin' ? 'Sign In to UN AI Society' : 'Create UN AI Society Account'}
           </h1>
           <p style={{ 
-            fontSize: '1rem', 
-            color: '#94A3B8', 
-            margin: 0, 
+            fontSize: '1.05rem', 
+            color: isLight ? '#475569' : '#94A3B8', 
+            margin: '0 0 1.5rem 0', 
             lineHeight: 1.6,
             maxWidth: '540px' 
           }}>
-            Access confidential UN AI governance working groups, policy briefs, and verified delegate event RSVPs using the same portal.
+            Access society events and resources.
           </p>
+
+          {/* Login with Microsoft Button - Placed under subtitle */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            paddingTop: '1.25rem',
+            borderTop: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)'}`,
+          }}>
+            <button
+              type="button"
+              onClick={() => loginWithMicrosoft()}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                padding: '0.4rem 0',
+                color: isLight ? '#0F172A' : '#FFFFFF',
+                fontSize: '1.15rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.65rem',
+                letterSpacing: '-0.01em',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = isLight ? '#0086BC' : '#38BDF8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = isLight ? '#0F172A' : '#FFFFFF';
+              }}
+            >
+              {/* Official 4-color Microsoft Symbol */}
+              <svg width="22" height="22" viewBox="0 0 23 23" fill="none" style={{ flexShrink: 0 }}>
+                <path fill="#F35325" d="M1 1h10v10H1z"/>
+                <path fill="#81BC06" d="M12 1h10v10H12z"/>
+                <path fill="#05A6F0" d="M1 12h10v10H1z"/>
+                <path fill="#FFBA08" d="M12 12h10v10H12z"/>
+              </svg>
+              <span style={{ 
+                borderBottom: '2px solid rgba(0, 158, 219, 0.6)', 
+                paddingBottom: '2px' 
+              }}>
+                Login with Microsoft
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Unboxed Mode Switcher Tabs */}
         <div style={{
           display: 'flex',
           gap: '2rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          borderBottom: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}`,
           marginBottom: '2rem',
           paddingBottom: '0.75rem',
         }}>
@@ -239,7 +298,7 @@ export const AuthPage: React.FC = () => {
               outline: 'none',
               fontSize: '1rem',
               fontWeight: mode === 'signin' ? 700 : 500,
-              color: mode === 'signin' ? '#009EDB' : '#64748B',
+              color: mode === 'signin' ? '#009EDB' : (isLight ? '#64748B' : '#94A3B8'),
               cursor: 'pointer',
               padding: 0,
               position: 'relative',
@@ -269,7 +328,7 @@ export const AuthPage: React.FC = () => {
               outline: 'none',
               fontSize: '1rem',
               fontWeight: mode === 'create' ? 700 : 500,
-              color: mode === 'create' ? '#009EDB' : '#64748B',
+              color: mode === 'create' ? '#009EDB' : (isLight ? '#64748B' : '#94A3B8'),
               cursor: 'pointer',
               padding: 0,
               position: 'relative',
@@ -294,7 +353,7 @@ export const AuthPage: React.FC = () => {
         {/* Error notification */}
         {error && (
           <div style={{
-            color: '#F87171',
+            color: '#EF4444',
             fontSize: '0.875rem',
             marginBottom: '1.5rem',
             display: 'flex',
@@ -305,13 +364,13 @@ export const AuthPage: React.FC = () => {
           </div>
         )}
 
-        {/* Flat Unboxed Form */}
+        {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
           {/* Create Account Fields */}
           {mode === 'create' && (
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: '#CBD5E1', marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: isLight ? '#334155' : '#CBD5E1', marginBottom: '0.5rem' }}>
                 Full Name
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -324,16 +383,16 @@ export const AuthPage: React.FC = () => {
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem 0.75rem 2.5rem',
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    background: isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'}`,
                     borderRadius: '8px',
-                    color: '#FFFFFF',
+                    color: isLight ? '#0F172A' : '#FFFFFF',
                     fontSize: '0.95rem',
                     outline: 'none',
                     transition: 'border-color 0.2s ease',
                   }}
                   onFocus={(e) => (e.target.style.borderColor = '#009EDB')}
-                  onBlur={(e) => (e.target.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
+                  onBlur={(e) => (e.target.style.borderColor = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)')}
                 />
               </div>
             </div>
@@ -341,7 +400,7 @@ export const AuthPage: React.FC = () => {
 
           {/* UN Email Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: '#CBD5E1', marginBottom: '0.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: isLight ? '#334155' : '#CBD5E1', marginBottom: '0.5rem' }}>
               UN Email Address (@un.org)
             </label>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -355,16 +414,16 @@ export const AuthPage: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem 0.75rem 2.5rem',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)',
+                  border: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'}`,
                   borderRadius: '8px',
-                  color: '#FFFFFF',
+                  color: isLight ? '#0F172A' : '#FFFFFF',
                   fontSize: '0.95rem',
                   outline: 'none',
                   transition: 'border-color 0.2s ease',
                 }}
                 onFocus={(e) => (e.target.style.borderColor = '#009EDB')}
-                onBlur={(e) => (e.target.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
+                onBlur={(e) => (e.target.style.borderColor = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)')}
               />
             </div>
           </div>
@@ -372,7 +431,7 @@ export const AuthPage: React.FC = () => {
           {/* Department Field for Create Account */}
           {mode === 'create' && (
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: '#CBD5E1', marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: isLight ? '#334155' : '#CBD5E1', marginBottom: '0.5rem' }}>
                 UN Agency / Organization
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -385,16 +444,16 @@ export const AuthPage: React.FC = () => {
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem 0.75rem 2.5rem',
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    background: isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'}`,
                     borderRadius: '8px',
-                    color: '#FFFFFF',
+                    color: isLight ? '#0F172A' : '#FFFFFF',
                     fontSize: '0.95rem',
                     outline: 'none',
                     transition: 'border-color 0.2s ease',
                   }}
                   onFocus={(e) => (e.target.style.borderColor = '#009EDB')}
-                  onBlur={(e) => (e.target.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
+                  onBlur={(e) => (e.target.style.borderColor = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)')}
                 />
               </div>
             </div>
@@ -402,7 +461,7 @@ export const AuthPage: React.FC = () => {
 
           {/* Password Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: '#CBD5E1', marginBottom: '0.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: isLight ? '#334155' : '#CBD5E1', marginBottom: '0.5rem' }}>
               Password
             </label>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -416,16 +475,16 @@ export const AuthPage: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem 0.75rem 2.5rem',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)',
+                  border: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'}`,
                   borderRadius: '8px',
-                  color: '#FFFFFF',
+                  color: isLight ? '#0F172A' : '#FFFFFF',
                   fontSize: '0.95rem',
                   outline: 'none',
                   transition: 'border-color 0.2s ease',
                 }}
                 onFocus={(e) => (e.target.style.borderColor = '#009EDB')}
-                onBlur={(e) => (e.target.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
+                onBlur={(e) => (e.target.style.borderColor = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)')}
               />
             </div>
           </div>
@@ -433,7 +492,7 @@ export const AuthPage: React.FC = () => {
           {/* Confirm Password for Create Account */}
           {mode === 'create' && (
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: '#CBD5E1', marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: isLight ? '#334155' : '#CBD5E1', marginBottom: '0.5rem' }}>
                 Confirm Password
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -447,22 +506,22 @@ export const AuthPage: React.FC = () => {
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem 0.75rem 2.5rem',
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    background: isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'}`,
                     borderRadius: '8px',
-                    color: '#FFFFFF',
+                    color: isLight ? '#0F172A' : '#FFFFFF',
                     fontSize: '0.95rem',
                     outline: 'none',
                     transition: 'border-color 0.2s ease',
                   }}
                   onFocus={(e) => (e.target.style.borderColor = '#009EDB')}
-                  onBlur={(e) => (e.target.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
+                  onBlur={(e) => (e.target.style.borderColor = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)')}
                 />
               </div>
             </div>
           )}
 
-          {/* Action Button - Unboxed flat accent */}
+          {/* Action Button */}
           <button
             type="submit"
             disabled={isLoading}
@@ -499,8 +558,8 @@ export const AuthPage: React.FC = () => {
           </button>
         </form>
 
-        {/* Flat Unboxed Fast Access Demo Profiles */}
-        <div style={{ marginTop: '3.5rem', paddingTop: '2rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        {/* Demo Profiles */}
+        <div style={{ marginTop: '3.5rem', paddingTop: '2rem', borderTop: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)'}` }}>
           <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
             Fast Demo Delegate Access (1-Click Sign In):
           </div>
@@ -515,7 +574,7 @@ export const AuthPage: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '0.75rem 0',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                  borderBottom: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'}`,
                   cursor: 'pointer',
                   transition: 'opacity 0.2s ease',
                 }}
@@ -529,16 +588,16 @@ export const AuthPage: React.FC = () => {
                     style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }}
                   />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#F1F5F9' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: isLight ? '#0F172A' : '#F1F5F9' }}>
                       {user.displayName}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                      {user.email} • <span style={{ color: '#009EDB' }}>{user.department}</span>
+                      {user.email} • <span style={{ color: isLight ? '#0086BC' : '#009EDB' }}>{user.department}</span>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#38BDF8', fontWeight: 500 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: isLight ? '#0086BC' : '#38BDF8', fontWeight: 500 }}>
                   <CheckCircle2 size={14} /> Direct Sign In
                 </div>
               </div>
@@ -548,15 +607,15 @@ export const AuthPage: React.FC = () => {
 
       </main>
 
-      {/* Flat Footer */}
+      {/* Footer */}
       <footer style={{
         position: 'relative',
         zIndex: 10,
         padding: '1.5rem',
         textAlign: 'center',
         fontSize: '0.75rem',
-        color: '#475569',
-        borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+        color: isLight ? '#64748B' : '#475569',
+        borderTop: `1px solid ${isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.05)'}`,
       }}>
         United Nations AI Society • Official Delegate Portal • Microsoft Entra ID Authentication Framework
       </footer>
