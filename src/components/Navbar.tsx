@@ -17,7 +17,7 @@ export const Navbar: React.FC<{ theme: 'light' | 'dark'; toggleTheme: () => void
   theme,
   toggleTheme,
 }) => {
-  const { currentUser, isAuthenticated, openLoginModal, logout, switchUserRole } = useAuth();
+  const { currentUser, isAuthenticated, logout, switchUserRole, setCurrentPage } = useAuth();
   const { searchQuery, setSearchQuery, setIsCreateModalOpen } = useEvents();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
@@ -35,7 +35,10 @@ export const Navbar: React.FC<{ theme: 'light' | 'dark'; toggleTheme: () => void
       justifyContent: 'space-between',
       gap: '1rem',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+      <div 
+        onClick={() => setCurrentPage('calendar')}
+        style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', cursor: 'pointer' }}
+      >
         <img
           src="/UN_AI_Society_Logo.png"
           alt="UN AI Society Logo"
@@ -217,11 +220,11 @@ export const Navbar: React.FC<{ theme: 'light' | 'dark'; toggleTheme: () => void
           </div>
         ) : (
           <button
-            onClick={openLoginModal}
+            onClick={() => setCurrentPage('auth')}
             className="btn-un-primary"
             style={{ fontSize: '0.85rem' }}
           >
-            <Shield size={16} /> Sign In with Microsoft
+            <Shield size={16} /> Sign In / Create Account
           </button>
         )}
       </div>

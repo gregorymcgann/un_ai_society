@@ -11,15 +11,19 @@ import type { UserProfile, UserRole } from '../types';
 import { MOCK_USERS } from '../services/mockData';
 import { auth, db, googleProvider } from '../firebase';
 
+export type AuthPageView = 'calendar' | 'auth';
+
 interface AuthContextType {
   currentUser: UserProfile | null;
   isAuthenticated: boolean;
   isLoginModalOpen: boolean;
+  currentPage: AuthPageView;
+  setCurrentPage: (page: AuthPageView) => void;
   openLoginModal: () => void;
   closeLoginModal: () => void;
   loginAsUser: (userId: string) => void;
   loginWithGoogle: () => Promise<void>;
-  loginWithMicrosoft: (email: string, displayName?: string, department?: string) => Promise<void>;
+  loginWithMicrosoft: (email?: string, displayName?: string, department?: string) => Promise<void>;
   logout: () => void;
   switchUserRole: (role: UserRole) => void;
 }
@@ -40,6 +44,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return MOCK_USERS[0];
   });
+
+  const [currentPage, setCurrentPageState] = useState<AuthPageView>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (path.includes('login') || hash.includes('login') || search.includes('auth')) {
+        return 'auth';
+      }
+    }
+    return 'calendar';
+  });
+
+  const setCurrentPage = (page: AuthPageView) => {
+    setCurrentPageState(page);
+    if (typeof window !== 'undefined') {
+      const targetUrl = page === 'auth' ? '/login' : '/';
+      if (window.location.pathname !== targetUrl) {
+        window.history.pushState({ page }, '', targetUrl);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path.includes('login') || hash.includes('login')) {
+        setCurrentPageState('auth');
+      } else {
+        setCurrentPageState('calendar');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
@@ -112,7 +153,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const openLoginModal = () => setIsLoginModalOpen(true);
+  const openLoginModal = () => {
+    setIsLoginModalOpen(true);
+    setCurrentPage('auth');
+  };
   const closeLoginModal = () => setIsLoginModalOpen(false);
 
   const loginAsUser = async (userId: string) => {
@@ -121,6 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(user);
       await saveMemberToFirestore(user);
       setIsLoginModalOpen(false);
+      setCurrentPage('calendar');
     }
   };
 
@@ -142,9 +187,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(profile);
       await saveMemberToFirestore(profile);
       setIsLoginModalOpen(false);
+      setCurrentPage('calendar');
     } catch (error) {
       console.error('Google Sign-In failed:', error);
-      // Fall back to anonymous or mock if popup fails
       try {
         const anon = await signInAnonymously(auth);
         const anonProfile: UserProfile = {
@@ -161,18 +206,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser(anonProfile);
         await saveMemberToFirestore(anonProfile);
         setIsLoginModalOpen(false);
+        setCurrentPage('calendar');
       } catch (anonErr) {
         console.error('Anonymous fallback failed:', anonErr);
       }
     }
   };
 
-  const loginWithMicrosoft = async (email: string, displayName?: string, department?: string) => {
+  const loginWithMicrosoft = async (email?: string, displayName?: string, department?: string) => {
+    const targetEmail = email && email.trim() ? email.trim() : 'delegate@un.org';
     const newUser: UserProfile = {
       uid: `un-user-${Date.now()}`,
-      displayName: displayName || email.split('@')[0].replace('.', ' '),
-      email: email.toLowerCase().endsWith('@un.org') ? email : `${email}@un.org`,
-      photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || email)}&background=009EDB&color=fff`,
+      displayName: displayName || (targetEmail.includes('@') ? targetEmail.split('@')[0].replace('.', ' ') : targetEmail),
+      email: targetEmail.toLowerCase().endsWith('@un.org') ? targetEmail : `${targetEmail}@un.org`,
+      photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || targetEmail)}&background=009EDB&color=fff`,
       department: department || 'UN Secretariat / AI Advisory',
       title: 'Delegation Representative',
       role: 'member',
@@ -182,6 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(newUser);
     await saveMemberToFirestore(newUser);
     setIsLoginModalOpen(false);
+    setCurrentPage('calendar');
   };
 
   const logout = () => {
@@ -206,6 +254,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currentUser,
         isAuthenticated: !!currentUser,
         isLoginModalOpen,
+        currentPage,
+        setCurrentPage,
         openLoginModal,
         closeLoginModal,
         loginAsUser,

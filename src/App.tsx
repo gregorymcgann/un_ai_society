@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { EventProvider, useEvents } from './context/EventContext';
 import { UNHeaderBanner } from './components/Banner/UNHeaderBanner';
 import { Navbar } from './components/Navbar';
@@ -9,6 +9,7 @@ import { WeekView } from './components/Calendar/WeekView';
 import { AgendaView } from './components/Calendar/AgendaView';
 import { EventDetailsDrawer } from './components/EventDrawer/EventDetailsDrawer';
 import { MicrosoftLoginModal } from './components/Auth/MicrosoftLoginModal';
+import { AuthPage } from './components/Auth/AuthPage';
 import { CreateEventModal } from './components/Modals/CreateEventModal';
 
 const CalendarViewRenderer: React.FC = () => {
@@ -27,6 +28,7 @@ const CalendarViewRenderer: React.FC = () => {
 };
 
 const MainLayout: React.FC = () => {
+  const { currentPage } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('un_ai_society_theme') as 'light' | 'dark') || 'light';
   });
@@ -39,6 +41,10 @@ const MainLayout: React.FC = () => {
   const toggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
+
+  if (currentPage === 'auth') {
+    return <AuthPage />;
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-primary)' }}>
