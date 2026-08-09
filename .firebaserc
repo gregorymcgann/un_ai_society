@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "aiprodtesting"
+  },
+  "targets": {
+    "aiprodtesting": {
+      "hosting": {
+        "un-ai-society": [
+          "un-ai-society"
+        ]
+      }
+    }
+  }
+}
