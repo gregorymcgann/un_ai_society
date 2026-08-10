@@ -303,6 +303,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsEmailVerified(false);
     await saveMemberToFirestore(profile);
     setIsLoginModalOpen(false);
+    setCurrentPage('calendar');
   };
 
   const signInWithEmail = async (email: string, password: string) => {
@@ -328,9 +329,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(profile);
     await saveMemberToFirestore(profile);
     setIsLoginModalOpen(false);
-    if (isVerified) {
-      setCurrentPage('calendar');
-    }
+    setCurrentPage('calendar');
   };
 
   const resendVerificationEmail = async () => {
