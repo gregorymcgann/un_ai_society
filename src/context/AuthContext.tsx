@@ -4,26 +4,36 @@ import {
   signInWithPopup, 
   signOut as firebaseSignOut,
   signInAnonymously,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  updateProfile,
   type User as FirebaseUser 
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { UserProfile, UserRole } from '../types';
-import { MOCK_USERS } from '../services/mockData';
 import { auth, db, googleProvider } from '../firebase';
 
 export type AuthPageView = 'calendar' | 'auth';
 
 interface AuthContextType {
   currentUser: UserProfile | null;
+  firebaseUser: FirebaseUser | null;
   isAuthenticated: boolean;
+  isEmailVerified: boolean;
   isLoginModalOpen: boolean;
   currentPage: AuthPageView;
   setCurrentPage: (page: AuthPageView) => void;
   openLoginModal: () => void;
   closeLoginModal: () => void;
-  loginAsUser: (userId: string) => void;
   loginWithGoogle: () => Promise<void>;
   loginWithMicrosoft: (email?: string, displayName?: string, department?: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, displayName?: string, department?: string) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
+  reloadAndCheckVerification: () => Promise<boolean>;
+  sendPasswordReset: (email: string) => Promise<void>;
   logout: () => void;
   switchUserRole: (role: UserRole) => void;
 }
@@ -43,6 +53,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     return null;
+  });
+
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(auth.currentUser);
+  const [isEmailVerified, setIsEmailVerified] = useState<boolean>(() => {
+    if (auth.currentUser) {
+      return auth.currentUser.emailVerified;
+    }
+    return true; // Default true for mock/demo users if no active Firebase email/password user
   });
 
   const [currentPage, setCurrentPageState] = useState<AuthPageView>(() => {
@@ -116,7 +134,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Firebase Auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
+      setFirebaseUser(fbUser);
       if (fbUser) {
+        const isPasswordUser = fbUser.providerData.some(p => p.providerId === 'password');
+        const verifiedStatus = isPasswordUser ? fbUser.emailVerified : true;
+        setIsEmailVerified(verifiedStatus);
+
         const memberRef = doc(db, 'members', fbUser.uid);
         try {
           const snap = await getDoc(memberRef);
@@ -130,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               department: data.department || 'UN AI Advisory Group',
               title: data.title || 'Delegation Representative',
               role: (data.role as UserRole) || 'member',
+              emailVerified: verifiedStatus,
               createdAt: data.createdAt || new Date().toISOString(),
               lastLoginAt: new Date().toISOString(),
             });
@@ -142,6 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               department: 'UN Secretariat / AI Advisory',
               title: 'Delegation Representative',
               role: 'member',
+              emailVerified: verifiedStatus,
               createdAt: new Date().toISOString(),
               lastLoginAt: new Date().toISOString(),
             };
@@ -154,6 +179,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (err) {
           console.warn('Firestore fetch failed, falling back to local Auth state:', err);
         }
+      } else {
+        setIsEmailVerified(true);
       }
     });
 
@@ -179,16 +206,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   const closeLoginModal = () => setIsLoginModalOpen(false);
 
-  const loginAsUser = async (userId: string) => {
-    const user = MOCK_USERS.find(u => u.uid === userId);
-    if (user) {
-      setCurrentUser(user);
-      await saveMemberToFirestore(user);
-      setIsLoginModalOpen(false);
-      setCurrentPage('calendar');
-    }
-  };
-
   const loginWithGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -201,10 +218,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         department: 'UN AI Society Member',
         title: 'Delegation Representative',
         role: 'member',
+        emailVerified: true,
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
       };
       setCurrentUser(profile);
+      setIsEmailVerified(true);
       await saveMemberToFirestore(profile);
       setIsLoginModalOpen(false);
       setCurrentPage('calendar');
@@ -220,10 +239,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           department: 'UN Secretariat',
           title: 'Guest Representative',
           role: 'member',
+          emailVerified: true,
           createdAt: new Date().toISOString(),
           lastLoginAt: new Date().toISOString(),
         };
         setCurrentUser(anonProfile);
+        setIsEmailVerified(true);
         await saveMemberToFirestore(anonProfile);
         setIsLoginModalOpen(false);
         setCurrentPage('calendar');
@@ -243,18 +264,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       department: department || 'UN Secretariat / AI Advisory',
       title: 'Delegation Representative',
       role: 'member',
+      emailVerified: true,
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString(),
     };
     setCurrentUser(newUser);
+    setIsEmailVerified(true);
     await saveMemberToFirestore(newUser);
     setIsLoginModalOpen(false);
     setCurrentPage('calendar');
   };
 
+  const signUpWithEmail = async (email: string, password: string, displayName?: string, department?: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const fbUser = userCredential.user;
+    
+    if (displayName) {
+      await updateProfile(fbUser, { displayName });
+    }
+
+    // Automatically send email verification link via Firebase Auth
+    await sendEmailVerification(fbUser);
+
+    const profile: UserProfile = {
+      uid: fbUser.uid,
+      displayName: displayName || email.split('@')[0],
+      email: fbUser.email || email,
+      photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || email)}&background=009EDB&color=fff`,
+      department: department || 'UN Global Pulse / Technology Bureau',
+      title: 'Delegation Representative',
+      role: 'member',
+      emailVerified: false,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+    };
+
+    setCurrentUser(profile);
+    setIsEmailVerified(false);
+    await saveMemberToFirestore(profile);
+    setIsLoginModalOpen(false);
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const fbUser = userCredential.user;
+
+    const isVerified = fbUser.emailVerified;
+    setIsEmailVerified(isVerified);
+
+    const profile: UserProfile = {
+      uid: fbUser.uid,
+      displayName: fbUser.displayName || fbUser.email?.split('@')[0] || 'UN Representative',
+      email: fbUser.email || email,
+      photoURL: fbUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(fbUser.displayName || 'UN')}&background=009EDB&color=fff`,
+      department: 'UN AI Advisory Group',
+      title: 'Delegation Representative',
+      role: 'member',
+      emailVerified: isVerified,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+    };
+
+    setCurrentUser(profile);
+    await saveMemberToFirestore(profile);
+    setIsLoginModalOpen(false);
+    if (isVerified) {
+      setCurrentPage('calendar');
+    }
+  };
+
+  const resendVerificationEmail = async () => {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    } else {
+      throw new Error('No active user session found to resend verification email.');
+    }
+  };
+
+  const reloadAndCheckVerification = async (): Promise<boolean> => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      const verified = auth.currentUser.emailVerified;
+      setIsEmailVerified(verified);
+      if (currentUser) {
+        setCurrentUser({ ...currentUser, emailVerified: verified });
+      }
+      if (verified) {
+        setCurrentPage('calendar');
+      }
+      return verified;
+    }
+    return false;
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
   const logout = () => {
     firebaseSignOut(auth).catch(() => {});
     setCurrentUser(null);
+    setFirebaseUser(null);
+    setIsEmailVerified(true);
     setCurrentPageState('auth');
     if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
       window.history.pushState({ page: 'auth' }, '', '/login');
@@ -276,15 +387,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         currentUser,
+        firebaseUser,
         isAuthenticated: !!currentUser,
+        isEmailVerified,
         isLoginModalOpen,
         currentPage,
         setCurrentPage,
         openLoginModal,
         closeLoginModal,
-        loginAsUser,
         loginWithGoogle,
         loginWithMicrosoft,
+        signUpWithEmail,
+        signInWithEmail,
+        resendVerificationEmail,
+        reloadAndCheckVerification,
+        sendPasswordReset,
         logout,
         switchUserRole,
       }}
@@ -301,4 +418,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
 

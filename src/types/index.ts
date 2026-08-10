@@ -8,6 +8,7 @@ export interface UserProfile {
   department?: string; // UN Agency (e.g., UNDP, UNICRI, ITU, UNODA)
   title?: string;
   role: UserRole;
+  emailVerified?: boolean;
   createdAt: string;
   lastLoginAt: string;
 }

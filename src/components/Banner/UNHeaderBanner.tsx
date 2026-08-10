@@ -33,7 +33,7 @@ export const UNHeaderBanner: React.FC = () => {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#BEE3F8' }}>
-          <ShieldCheck size={13} /> Microsoft Entra ID Verified
+          <ShieldCheck size={13} /> Firebase Security Verified
         </span>
       </div>
     </div>

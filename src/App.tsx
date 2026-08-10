@@ -8,8 +8,8 @@ import { MonthView } from './components/Calendar/MonthView';
 import { WeekView } from './components/Calendar/WeekView';
 import { AgendaView } from './components/Calendar/AgendaView';
 import { EventDetailsDrawer } from './components/EventDrawer/EventDetailsDrawer';
-import { MicrosoftLoginModal } from './components/Auth/MicrosoftLoginModal';
 import { AuthPage } from './components/Auth/AuthPage';
+import { EmailVerificationView } from './components/Auth/EmailVerificationView';
 import { CreateEventModal } from './components/Modals/CreateEventModal';
 
 const CalendarViewRenderer: React.FC = () => {
@@ -28,7 +28,7 @@ const CalendarViewRenderer: React.FC = () => {
 };
 
 const MainLayout: React.FC = () => {
-  const { currentPage, isAuthenticated } = useAuth();
+  const { currentPage, isAuthenticated, isEmailVerified } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('un_ai_society_theme') as 'light' | 'dark') || 'light';
   });
@@ -44,6 +44,10 @@ const MainLayout: React.FC = () => {
 
   if (!isAuthenticated || currentPage === 'auth') {
     return <AuthPage theme={theme} toggleTheme={toggleTheme} />;
+  }
+
+  if (!isEmailVerified) {
+    return <EmailVerificationView theme={theme} toggleTheme={toggleTheme} />;
   }
 
   return (
@@ -73,7 +77,7 @@ const MainLayout: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           <span>© 2026 United Nations AI Society</span>
           <span>•</span>
-          <span>Microsoft Entra ID Protected</span>
+          <span>Firebase Auth Protected</span>
           <span>•</span>
           <span>General Assembly & Secretariat Network</span>
         </div>
@@ -84,7 +88,6 @@ const MainLayout: React.FC = () => {
 
       {/* Drawers & Modals */}
       <EventDetailsDrawer />
-      <MicrosoftLoginModal />
       <CreateEventModal />
     </div>
   );

@@ -222,7 +222,7 @@ export const EventDetailsDrawer: React.FC = () => {
                     className="btn-un-secondary"
                     style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', borderColor: 'var(--un-blue)', color: 'var(--un-blue)' }}
                   >
-                    <Shield size={14} /> Sign In with Microsoft to Unlock Link
+                    <Shield size={14} /> Sign In to Unlock Link
                   </button>
                 </div>
               )
