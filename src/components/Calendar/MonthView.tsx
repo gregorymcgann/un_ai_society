@@ -78,7 +78,7 @@ export const MonthView: React.FC = () => {
   };
 
   const isToday = (dayDate: Date) => {
-    const today = new Date(2026, 7, 9);
+    const today = new Date();
     return (
       today.getFullYear() === dayDate.getFullYear() &&
       today.getMonth() === dayDate.getMonth() &&

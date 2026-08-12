@@ -64,7 +64,7 @@ export const WeekView: React.FC = () => {
         {weekDays.map((d, i) => {
           const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
           const dayNum = d.getDate();
-          const isToday = d.toDateString() === new Date(2026, 7, 9).toDateString();
+          const isToday = d.toDateString() === new Date().toDateString();
 
           return (
             <div

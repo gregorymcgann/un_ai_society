@@ -13,7 +13,7 @@ export const CreateEventModal: React.FC = () => {
   const [locationType, setLocationType] = useState<LocationType>('virtual');
   const [venue, setVenue] = useState('');
   const [meetingUrl, setMeetingUrl] = useState('');
-  const [targetAudience, setTargetAudience] = useState('UN Delegates, Policy Experts, AI Researchers');
+  const [targetAudience, setTargetAudience] = useState('');
   
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -36,8 +36,8 @@ export const CreateEventModal: React.FC = () => {
     const newSpeaker: Speaker = {
       id: `spk-${Date.now()}`,
       name: speakerName.trim(),
-      title: speakerTitle.trim() || 'UN Advisor',
-      organization: speakerOrg.trim() || 'UN Secretariat',
+      title: speakerTitle.trim(),
+      organization: speakerOrg.trim(),
       avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(speakerName)}&background=009EDB&color=fff`
     };
     setSpeakers([...speakers, newSpeaker]);
@@ -61,18 +61,11 @@ export const CreateEventModal: React.FC = () => {
       startTime: startISO,
       endTime: endISO,
       locationType,
-      venue: locationType !== 'virtual' ? venue : undefined,
-      meetingUrl: locationType !== 'in-person' ? (meetingUrl || 'https://teams.microsoft.com/l/meetup-join/un-ai-session') : undefined,
-      speakers: speakers.length > 0 ? speakers : [
-        {
-          id: 'spk-def',
-          name: 'UN AI Steering Committee',
-          title: 'Session Lead',
-          organization: 'United Nations'
-        }
-      ],
+      venue: locationType !== 'virtual' ? venue.trim() : undefined,
+      meetingUrl: locationType !== 'in-person' ? (meetingUrl.trim() || undefined) : undefined,
+      speakers,
       targetAudience: targetAudience.trim(),
-      topics: ['AI Governance', category]
+      topics: [category]
     });
   };
 

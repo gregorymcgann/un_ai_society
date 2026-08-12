@@ -55,7 +55,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   // Form fields state
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [department, setDepartment] = useState('UN Global Pulse / Technology Bureau');
+  const [department, setDepartment] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
@@ -419,7 +419,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <User size={18} style={{ position: 'absolute', left: '0.75rem', color: '#64748B' }} />
                 <input
                   type="text"
-                  placeholder="e.g. Dr. Helena Vance"
+                  placeholder="Enter your full name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   style={{
@@ -450,7 +450,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               <input
                 type="email"
                 required
-                placeholder="e.g. delegate@un.org"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={{
@@ -474,13 +474,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           {mode === 'create' && (
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: isLight ? '#334155' : '#CBD5E1', marginBottom: '0.5rem' }}>
-                UN Agency / Organization
+                Agency / Organization
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <Building2 size={18} style={{ position: 'absolute', left: '0.75rem', color: '#64748B' }} />
                 <input
                   type="text"
-                  placeholder="e.g. UNICRI / UNDP / ITU / UNESCO"
+                  placeholder="Organization or Agency Name"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
                   style={{

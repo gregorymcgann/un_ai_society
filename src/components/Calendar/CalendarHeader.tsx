@@ -50,7 +50,7 @@ export const CalendarHeader: React.FC = () => {
   };
 
   const handleToday = () => {
-    setCurrentDate(new Date(2026, 7, 9)); // August 2026
+    setCurrentDate(new Date());
   };
 
   const monthYearLabel = currentDate.toLocaleDateString('en-US', {

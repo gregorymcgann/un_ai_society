@@ -75,7 +75,7 @@ const MainLayout: React.FC = () => {
         color: 'var(--text-muted)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-          <span>© 2026 United Nations AI Society</span>
+          <span>© {new Date().getFullYear()} United Nations AI Society</span>
           <span>•</span>
           <span>Firebase Auth Protected</span>
           <span>•</span>
